@@ -17,7 +17,13 @@ from .average_precision import (
     pr_curve_exact,
 )
 from .calibration import clamp, cox_calibration, recalibrate_to_prevalence
-from .net_benefit import nb_binormal, nb_exact, nb_treat_all
+from .net_benefit import (
+    nb_binormal,
+    nb_binormal_band,
+    nb_exact,
+    nb_exact_ci,
+    nb_treat_all,
+)
 from .reweight import reweight
 from .roc import roc_auc
 
@@ -29,6 +35,8 @@ __all__ = [
     "nb_exact",
     "nb_binormal",
     "nb_treat_all",
+    "nb_exact_ci",
+    "nb_binormal_band",
     "clamp",
     "cox_calibration",
     "recalibrate_to_prevalence",

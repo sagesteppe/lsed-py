@@ -1,15 +1,23 @@
 # lsed (Python)
 
 Prevalence-corrected evaluation of species-distribution model predictions — a
-Python mirror of the [`lsed` R package](../R).
+Python mirror of the [`lsed` R package](https://github.com/sagesteppe/lsed).
 
 ## Install
 
+Install the latest version straight from GitHub (needs `git`; no PyPI release yet):
+
 ```bash
-# from this directory (python/)
-pip install -e .
-# with the test dependencies
-pip install -e ".[test]"
+pip install "git+https://github.com/sagesteppe/lsed-py.git"
+```
+
+Pin a specific version with `@`, e.g. `...lsed-py.git@v0.1.0` (tag) or `@main`.
+
+For local development, from a clone of the repo:
+
+```bash
+pip install -e .            # editable install
+pip install -e ".[test]"    # with the test dependencies
 ```
 
 ## Usage
@@ -41,6 +49,15 @@ lsed.cox_calibration(truth, prob)              # {'cox_intercept': ..., 'cox_slo
 
 Vector-valued helpers return `numpy.ndarray`; the PR-curve helpers return a
 `pandas.DataFrame` with `recall` and `precision` columns.
+
+## Relationship to the R package
+
+This is a faithful port of the [`lsed` R package](https://github.com/sagesteppe/lsed), with the same function
+names and behaviour — outputs match the R implementation to numerical tolerance.
+The R package is the canonical source: see its
+[documentation site](https://sagesteppe.github.io/lsed/) and the accompanying
+manuscript for the methods, decision-curve background, and worked examples. This
+package deliberately keeps that material in one place rather than duplicating it.
 
 ## Tests
 
