@@ -20,6 +20,13 @@ from .average_precision import (
 )
 from .calibration import clamp, cox_calibration, recalibrate_to_prevalence
 from .contract import smooth_degree2
+from .cost import (
+    build_resistance,
+    cost_distance,
+    geo_distance,
+    rescale01_grid,
+    tobler_friction,
+)
 from .net_benefit import (
     nb_binormal,
     nb_binormal_band,
@@ -36,6 +43,15 @@ from .network import (
     rescale01,
 )
 from .patches import comp_labels, kcap, rook_edges, snap_pieces
+from .raster import (
+    aggregate,
+    cellsize,
+    rasterize_mask,
+    raster_terms,
+    read_grid,
+    sample,
+    write_grid,
+)
 from .rank import rank_calculate, rank_index
 from .reweight import reweight
 from .roc import roc_auc
@@ -75,4 +91,18 @@ __all__ = [
     # spatial prioritisation: ranking
     "rank_index",
     "rank_calculate",
+    # spatial prioritisation: cost / distance surfaces
+    "rescale01_grid",
+    "tobler_friction",
+    "build_resistance",
+    "geo_distance",
+    "cost_distance",
+    # spatial prioritisation: raster I/O + sampling glue
+    "read_grid",
+    "write_grid",
+    "cellsize",
+    "sample",
+    "rasterize_mask",
+    "aggregate",
+    "raster_terms",
 ]
