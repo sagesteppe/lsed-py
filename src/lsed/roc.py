@@ -26,6 +26,20 @@ def roc_auc(truth, prob):
     -------
     float
         ROC-AUC, or ``nan`` if a class is absent.
+
+    Notes
+    -----
+    ROC-AUC is a discrimination *diagnostic* -- the probability a random presence
+    outscores a random absence -- not a decision-curve reconstruction anchor. On
+    species-distribution models it is easily inflated by easy, far-from-suitable
+    absences the model rejects for free, so a curve rebuilt from it can oversell
+    and disappoint on ground-truthing. To reconstruct a prevalence-corrected
+    decision curve, anchor on a PR-AUC (:func:`lsed.pr_auc`) and pass it to
+    :func:`lsed.ap_scalar_to_prev` or :func:`lsed.nb_binormal_band`.
+
+    See Also
+    --------
+    lsed.pr_auc, lsed.ap_scalar_to_prev, lsed.nb_binormal_band
     """
     truth = np.asarray(truth, dtype=float)
     prob = np.asarray(prob, dtype=float)

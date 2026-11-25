@@ -5,6 +5,7 @@ from lsed import (
     ap_binormal,
     ap_pointwise,
     ap_scalar_to_prev,
+    pr_auc,
     pr_curve_binormal,
     pr_curve_exact,
 )
@@ -79,3 +80,28 @@ def test_pr_curve_binormal_grid_length_and_valid_precisions():
     assert len(cv) == 250
     assert np.all((cv["precision"] > 0) & (cv["precision"] < 1))
     assert np.all((cv["recall"] > 0) & (cv["recall"] < 1))
+
+
+def test_pr_auc_equals_ap_pointwise_at_sample_prevalence():
+    rng = np.random.default_rng(40)
+    truth = rng.binomial(1, 0.3, size=200)
+    prob = 1 / (1 + np.exp(-(-0.8 + 1.5 * truth + rng.normal(size=200))))
+    assert np.isclose(pr_auc(truth, prob),
+                      ap_pointwise(truth, prob, pi=np.mean(truth == 1)))
+
+
+def test_pr_auc_hits_one_for_perfect_ranking_and_nan_without_both_classes():
+    truth = np.array([0, 0, 0, 1, 1])
+    prob = np.array([1, 2, 3, 4, 5])          # the two presences score highest
+    assert np.isclose(pr_auc(truth, prob), 1)
+    assert np.isnan(pr_auc(np.ones(5), np.random.rand(5)))
+    assert np.isnan(pr_auc(np.zeros(5), np.random.rand(5)))
+
+
+def test_pr_auc_bounded_and_beats_no_skill_baseline():
+    rng = np.random.default_rng(41)
+    truth = rng.binomial(1, 0.25, size=300)
+    prob = 1 / (1 + np.exp(-(-1 + 2 * truth + rng.normal(size=300))))
+    ap = pr_auc(truth, prob)
+    assert 0 <= ap <= 1
+    assert ap >= np.mean(truth == 1)          # useful ranker beats prevalence baseline

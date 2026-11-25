@@ -11,6 +11,7 @@ from .reweight import reweight
 
 __all__ = [
     "ap_pointwise",
+    "pr_auc",
     "ap_binormal",
     "ap_scalar_to_prev",
     "pr_curve_exact",
@@ -66,6 +67,49 @@ def ap_pointwise(truth, prob, pi):
     prec = tpw / (tpw + fpw)
     delta = np.concatenate(([recall[0]], np.diff(recall)))
     return float(np.sum(delta * prec))
+
+
+def pr_auc(truth, prob):
+    """Reported precision-recall AUC (average precision) at the sample prevalence.
+
+    Average precision computed at the evaluation sample's own prevalence -- the
+    ordinary (unweighted) PR-AUC a model reports from its test set, and the
+    precision-side sibling of the prevalence-invariant :func:`lsed.roc_auc`. It is
+    exactly :func:`ap_pointwise` evaluated at ``pi = mean(truth == 1)`` (where the
+    prevalence weights become uniform); use :func:`ap_pointwise` directly to
+    re-price average precision to a different target prevalence.
+
+    Parameters
+    ----------
+    truth : array_like
+        Outcomes coded 1 (presence) / 0 (absence).
+    prob : array_like
+        Predicted probabilities or scores, same length as ``truth``.
+
+    Returns
+    -------
+    float
+        Average precision at the sample prevalence, or ``nan`` if a class is
+        absent.
+
+    Notes
+    -----
+    Unlike :func:`lsed.roc_auc`, average precision is not inflated by easy
+    absences, which is why it is the recommended anchor for curve reconstruction.
+    This is still a per-sample *diagnostic*: to rebuild a prevalence-corrected
+    decision curve, pass the reported value -- with the prevalence it was measured
+    at -- to :func:`ap_scalar_to_prev` or :func:`lsed.nb_binormal_band`.
+
+    See Also
+    --------
+    lsed.roc_auc, ap_pointwise, ap_scalar_to_prev, lsed.nb_binormal_band
+    """
+    truth = np.asarray(truth, dtype=float)
+    n1 = np.sum(truth == 1)
+    n0 = np.sum(truth == 0)
+    if n1 == 0 or n0 == 0:
+        return float("nan")
+    return ap_pointwise(truth, prob, pi=n1 / (n1 + n0))
 
 
 def ap_binormal(mu, pi, grid=4000):
