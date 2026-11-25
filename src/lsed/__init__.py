@@ -36,6 +36,7 @@ from .network import (
     rescale01,
 )
 from .patches import comp_labels, kcap, rook_edges, snap_pieces
+from .rank import rank_calculate, rank_index
 from .reweight import reweight
 from .roc import roc_auc
 
@@ -71,4 +72,7 @@ __all__ = [
     "build_network",
     "accessibility",
     "complementarity",
+    # spatial prioritisation: ranking
+    "rank_index",
+    "rank_calculate",
 ]
