@@ -42,7 +42,7 @@ from .network import (
     osm_speeds,
     rescale01,
 )
-from .patches import comp_labels, kcap, rook_edges, snap_pieces
+from .patches import cluster_patches, comp_labels, kcap, rook_edges, snap_pieces
 from .raster import (
     aggregate,
     cellsize,
@@ -55,6 +55,15 @@ from .raster import (
 from .rank import rank_calculate, rank_index
 from .reweight import reweight
 from .roc import roc_auc
+from .survey import (
+    SurveyField,
+    eval_survey,
+    guess_record_type,
+    survey_field,
+    survey_raster,
+    survey_term,
+    survey_weights,
+)
 
 __version__ = "0.0.0.dev0"
 
@@ -80,6 +89,7 @@ __all__ = [
     "comp_labels",
     "snap_pieces",
     "kcap",
+    "cluster_patches",
     "smooth_degree2",
     # spatial prioritisation: travel-time network
     "osm_speeds",
@@ -105,4 +115,12 @@ __all__ = [
     "rasterize_mask",
     "aggregate",
     "raster_terms",
+    # spatial prioritisation: survey (S) term
+    "survey_weights",
+    "survey_field",
+    "eval_survey",
+    "survey_term",
+    "survey_raster",
+    "guess_record_type",
+    "SurveyField",
 ]

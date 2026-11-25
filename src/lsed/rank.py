@@ -17,8 +17,23 @@ import numpy as np
 import pandas as pd
 
 from .network import accessibility, build_network, complementarity, osm_speeds
+from .patches import cluster_patches
 
 __all__ = ["rank_index", "rank_calculate"]
+
+
+def _ac_block(net_lines, patches_sub, origin_xy, areas_sub, speeds,
+              offtrail_speed, offtrail_penalty, target_area, cap_q, invert):
+    """Accessibility + complementarity for one patch subset on one sub-network."""
+    net = build_network(net_lines, speeds=speeds)
+    ab = accessibility(
+        net, patches_sub, origins_xy=origin_xy,
+        offtrail_speed=offtrail_speed, offtrail_penalty=offtrail_penalty, invert=invert,
+    )
+    comp = complementarity(
+        ab["net"], areas=areas_sub, target_area=target_area, cap_q=cap_q, invert=invert
+    )
+    return ab["access_hr"], comp["assemble_hr"]
 
 
 def _rescale01(x):
@@ -112,6 +127,8 @@ def rank_calculate(
     offtrail_speed=5.0,
     offtrail_penalty=0.5,
     invert=True,
+    cluster_eps_km=None,
+    cluster_buffer_m=1500.0,
 ):
     """Score patches from the operational terms, mirroring R's ``rank_calculate``.
 
@@ -163,27 +180,45 @@ def rank_calculate(
                 raise ValueError(f"extra_terms['{key}'] must have one value per patch")
             terms[key] = vec
 
-    # A, C over the network (single-graph path).
+    # A, C over the network.
     if network is not None and origin_xy is not None:
         if areas is None:
             if area_col not in patches:
                 raise ValueError(f"areas needed for C: pass areas= or a '{area_col}' column")
             areas = patches[area_col].to_numpy()
-        net = build_network(network, speeds=speeds)
-        ab = accessibility(
-            net,
-            patches,
-            origins_xy=origin_xy,
-            offtrail_speed=offtrail_speed,
-            offtrail_penalty=offtrail_penalty,
-            invert=invert,
+        areas = np.asarray(areas, dtype=float)
+        block_kw = dict(
+            speeds=speeds, offtrail_speed=offtrail_speed,
+            offtrail_penalty=offtrail_penalty, target_area=target_area,
+            cap_q=cap_q, invert=invert,
         )
-        comp = complementarity(
-            ab["net"], areas=areas, target_area=target_area, cap_q=cap_q, invert=invert
-        )
+        n = len(patches)
+        acc_hr = np.full(n, np.nan)
+        asm_hr = np.full(n, np.nan)
+        if cluster_eps_km is None:
+            acc_hr, asm_hr = _ac_block(network, patches, origin_xy, areas, **block_kw)
+        else:
+            # per-cluster: each cluster routes on all roads (the drive-in) plus
+            # only the trails near its own bbox, so work scales with cluster size.
+            from shapely.geometry import box as _box
+
+            cl = cluster_patches(patches, eps_km=cluster_eps_km)
+            roads = network[network["class"] == "road"]
+            trails = network[network["class"] == "trail"]
+            for gid in np.unique(cl):
+                idx = np.where(cl == gid)[0]
+                sub = patches.iloc[idx]
+                bb = _box(*sub.total_bounds).buffer(cluster_buffer_m)
+                local = trails[trails.intersects(bb)]
+                net_lines = pd.concat([roads, local])
+                a, c = _ac_block(
+                    net_lines, sub, origin_xy, areas[idx], **block_kw
+                )
+                acc_hr[idx] = a
+                asm_hr[idx] = c
         # raw negative hours; rank_index rescales so low hours -> high priority
-        terms["A"] = -ab["access_hr"]
-        terms["C"] = -comp["assemble_hr"]
+        terms["A"] = -acc_hr
+        terms["C"] = -asm_hr
 
     # P - model suitability of the patch itself.
     if prob_col is not None and prob_col in patches:

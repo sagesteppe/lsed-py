@@ -14,8 +14,9 @@ import numpy as np
 from scipy.cluster.vq import kmeans2
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
+from scipy.spatial import cKDTree
 
-__all__ = ["rook_edges", "comp_labels", "snap_pieces", "kcap"]
+__all__ = ["rook_edges", "comp_labels", "snap_pieces", "kcap", "cluster_patches"]
 
 
 def rook_edges(gc, nc, nr):
@@ -202,3 +203,42 @@ def kcap(gc, capn, nc, seed=0):
             break
         k += 1
     return lab
+
+
+def cluster_patches(patches, eps_km=5.0):
+    """Group patch centroids that lie within ``eps_km`` of one another.
+
+    A within-distance graph over the centroids, labelled by connected component,
+    so downstream work (OSM fetch, per-cluster routing) can be done only where
+    patches actually are. Mirrors ``cluster_patches`` in ``fn_download.R``.
+
+    Parameters
+    ----------
+    patches : geopandas.GeoDataFrame or array_like
+        Patches (centroids taken from the geometry) or an ``(n, 2)`` array of
+        coordinates, in a projected CRS (metres).
+    eps_km : float, optional
+        Join distance in km: centroids within this share a cluster (default 5).
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer cluster label per patch, in input order.
+    """
+    if hasattr(patches, "geometry"):
+        cen = patches.geometry.centroid
+        xy = np.column_stack([cen.x.to_numpy(), cen.y.to_numpy()])
+    else:
+        xy = np.asarray(patches, dtype=float)[:, :2]
+    n = len(xy)
+    if n == 0:
+        return np.empty(0, dtype=int)
+    pairs = cKDTree(xy).query_pairs(r=eps_km * 1000.0, output_type="ndarray")
+    if len(pairs):
+        g = coo_matrix(
+            (np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])), shape=(n, n)
+        )
+    else:
+        g = coo_matrix((n, n))
+    _, labels = connected_components(g, directed=False)
+    return labels
